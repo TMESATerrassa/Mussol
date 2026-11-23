@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parada Mussol · L12</title>
+<meta name="description" content="Estat en temps real de la parada Mussol de la línia 12 de TMESA (Terrassa)">
+<meta name="theme-color" content="#0f172a">
+<style>
+  :root{
+    --fons:#f1f5f9; --text:#0f172a; --suau:#475569; --vora:#e2e8f0; --targeta:#ffffff;
+    --verd:#15803d; --verd-fons:#dcfce7; --vermell:#b91c1c; --vermell-fons:#fee2e2; --gris:#64748b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--fons);color:var(--text);
+    font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+  header{background:#0f172a;color:#fff;padding:18px 16px 22px}
+  .linia{display:inline-flex;align-items:center;gap:8px;font-size:.85rem;color:#cbd5e1;letter-spacing:.02em}
+  .linia b{background:#e11d48;color:#fff;border-radius:6px;padding:1px 8px;font-size:.9rem}
+  h1{margin:6px 0 0;font-size:1.75rem;line-height:1.15}
+  main{max-width:520px;margin:-12px auto 0;padding:0 16px 32px}
+  .estat{background:var(--targeta);border-radius:18px;box-shadow:0 1px 3px rgba(15,23,42,.08),0 8px 24px rgba(15,23,42,.06);
+    overflow:hidden;border:1px solid var(--vora)}
+  .franja{display:flex;align-items:center;gap:14px;padding:20px 18px;color:#fff}
+  .franja svg{flex:0 0 52px;width:52px;height:52px}
+  .franja .titol{font-size:1.45rem;font-weight:800;line-height:1.2}
+  .cos{padding:16px 18px 18px}
+  .motiu{font-size:1.1rem;font-weight:700;margin:0 0 4px}
+  .detall{margin:0 0 6px;color:var(--text)}
+  .hora{margin:0;color:var(--suau);font-size:.95rem}
+  .consell{margin:14px 0 0;padding:12px 14px;border-radius:12px;font-size:.95rem}
+  .verd .franja{background:var(--verd)} .verd .consell{background:var(--verd-fons);color:#14532d}
+  .vermell .franja{background:var(--vermell)} .vermell .consell{background:var(--vermell-fons);color:#7f1d1d}
+  .carregant .franja{background:var(--gris)}
+  .pendent .franja{background:#b45309} .pendent .consell{background:#fef3c7;color:#78350f}
+  .fora .franja{background:#475569} .fora .consell{background:#e2e8f0;color:#1e293b}
+  .passos{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+  .passos span{background:#f1f5f9;border:1px solid var(--vora);border-radius:8px;padding:3px 8px;font-variant-numeric:tabular-nums;font-size:.95rem}
+  .horaris{margin-top:16px;background:var(--targeta);border:1px solid var(--vora);border-radius:16px;padding:14px 16px}
+  .horaris h2{font-size:1rem;margin:0 0 6px}
+  .horaris h3{font-size:.9rem;margin:12px 0 0;color:var(--suau);font-weight:600}
+  .horaris .passos{margin-top:6px}
+  .peu-estat{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 2px 0;color:var(--suau);font-size:.9rem}
+  button{font:inherit;font-weight:600;color:#0f172a;background:#fff;border:1px solid var(--vora);border-radius:10px;padding:8px 14px;cursor:pointer;min-height:40px}
+  button:active{transform:translateY(1px)}
+  .llegenda{margin-top:26px;background:var(--targeta);border:1px solid var(--vora);border-radius:16px;padding:14px 16px}
+  .llegenda h2{font-size:1rem;margin:0 0 10px}
+  .llegenda p{display:flex;gap:10px;align-items:flex-start;margin:8px 0;font-size:.95rem;color:var(--suau)}
+  .punt{flex:0 0 14px;height:14px;border-radius:50%;margin-top:4px}
+  footer{text-align:center;color:var(--suau);font-size:.8rem;margin-top:24px}
+  .ocult{display:none}
+  @media (prefers-reduced-motion:no-preference){ .estat{transition:opacity .2s} }
+</style>
+</head>
+<body>
+<header>
+  <div class="linia"><b>L12</b> TMESA · Terrassa</div>
+  <h1>Parada Mussol</h1>
+</header>
+
+<main>
+  <section id="estat" class="estat carregant" aria-live="polite">
+    <div class="franja">
+      <svg id="icona" viewBox="0 0 52 52" aria-hidden="true"></svg>
+      <div class="titol" id="titol">Consultant l'estat…</div>
+    </div>
+    <div class="cos">
+      <p class="motiu" id="motiu"></p>
+      <p class="detall ocult" id="detall"></p>
+      <p class="hora" id="hora"></p>
+      <p class="consell ocult" id="consell"></p>
+      <div class="passos ocult" id="passos"></div>
+    </div>
+  </section>
+
+  <div class="peu-estat">
+    <span id="actualitzat">&nbsp;</span>
+    <button type="button" id="refresca">Actualitzar</button>
+  </div>
+
+  <section class="llegenda" aria-label="Què vol dir cada color">
+    <h2>Què vol dir?</h2>
+    <p><span class="punt" style="background:var(--verd)"></span><span><b>Verd:</b> el conductor ha confirmat que avui l'autobús baixa fins a la parada Mussol.</span></p>
+    <p><span class="punt" style="background:var(--vermell)"></span><span><b>Vermell:</b> avui l'autobús no pot baixar a la parada Mussol. Us n'indiquem el motiu.</span></p>
+    <p><span class="punt" style="background:#b45309"></span><span><b>Taronja:</b> el conductor encara no ha confirmat si avui baixarà.</span></p>
+    <p><span class="punt" style="background:#475569"></span><span><b>Gris:</b> ara no hi ha servei a la parada (fora d'horari).</span></p>
+  </section>
+
+  <section class="horaris" id="horaris" aria-label="Horaris de pas">
+    <h2>Horaris de pas per la parada Mussol</h2>
+    <h3>Feiners</h3><div class="passos" id="hFeiners"></div>
+    <h3>Dissabtes</h3><div class="passos" id="hDissabtes"></div>
+    <h3>Diumenges i festius</h3><div class="passos" id="hFestius"></div>
+  </section>
+
+  <footer>TMESA · Transports Municipals d'Egara, S.A.</footer>
+</main>
+
+<script>
+  // Servidor de Google (Apps Script) on es guarden les pulsacions del conductor
+  const SERVIDOR = 'https://script.google.com/macros/s/AKfycbztXUeMI3XKDA2XmDGbhEP3nK20-47v0MjcRKum7yenzvhOyUR9uNyeUBtvt_F8x5QWwA/exec';
+  const ALTERNATIVA = "Podeu agafar la línia 12 a la parada més propera del seu recorregut.";
+
+  const $ = id => document.getElementById(id);
+  const ICONA_OK = '<circle cx="26" cy="26" r="24" fill="rgba(255,255,255,.18)"/><path d="M15 27l8 8 15-17" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>';
+  const ICONA_NO = '<circle cx="26" cy="26" r="24" fill="rgba(255,255,255,.18)"/><path d="M17 17l18 18M35 17L17 35" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>';
+  const ICONA_ESPERA = '<circle cx="26" cy="26" r="24" fill="rgba(255,255,255,.18)"/><circle cx="26" cy="26" r="3" fill="#fff"/>';
+
+  const hm = t => new Date(t).toLocaleTimeString('ca-ES', {hour:'2-digit', minute:'2-digit'});
+  function dia(t){
+    const d = new Date(t), a = new Date();
+    const mateix = (x,y) => x.toDateString() === y.toDateString();
+    if (mateix(d,a)) return 'avui';
+    const ahir = new Date(a); ahir.setDate(a.getDate()-1);
+    if (mateix(d,ahir)) return 'ahir';
+    const dema = new Date(a); dema.setDate(a.getDate()+1);
+    if (mateix(d,dema)) return 'demà';
+    return d.toLocaleDateString('ca-ES', {day:'numeric', month:'long'});
+  }
+
+  function xips(id, llista){
+    const el = $(id); el.innerHTML = '';
+    (llista || []).forEach(t => { const s = document.createElement('span'); s.textContent = t; el.appendChild(s); });
+  }
+
+  function pinta(e){
+    const det = $('detall'), cons = $('consell'), pas = $('passos');
+    det.classList.add('ocult'); cons.classList.add('ocult'); pas.classList.add('ocult');
+    const cls = {VERD:'verd', VERMELL:'vermell', PENDENT:'pendent', FORA:'fora'}[e.estat] || 'fora';
+    $('estat').className = 'estat ' + cls;
+    $('icona').innerHTML = e.estat === 'VERD' ? ICONA_OK : e.estat === 'VERMELL' ? ICONA_NO : ICONA_ESPERA;
+    if (e.estat === 'VERD') {
+      $('titol').textContent = "Avui l'autobús BAIXA a la parada Mussol";
+      $('motiu').textContent = e.properText ? 'Proper pas: ' + e.properText : 'Ja ha passat el darrer autobús d’avui.';
+      $('hora').textContent = 'Confirmat pel conductor a les ' + e.horaDesde + '.';
+      if (e.passosAvui && e.passosAvui.length > 1) { xips('passos', e.passosAvui); pas.classList.remove('ocult'); }
+    } else if (e.estat === 'VERMELL') {
+      $('titol').textContent = "Avui l'autobús NO baixa a la parada Mussol";
+      $('motiu').textContent = 'Motiu: ' + e.motiuText;
+      if (e.detall) { det.textContent = e.detall; det.classList.remove('ocult'); }
+      $('hora').textContent = 'Informat pel conductor a les ' + e.horaDesde + '.';
+      cons.textContent = e.alternativa || ALTERNATIVA; cons.classList.remove('ocult');
+    } else if (e.estat === 'PENDENT') {
+      $('titol').textContent = 'Pendent de confirmar';
+      $('motiu').textContent = "El conductor encara no ha confirmat si avui l'autobús baixarà a la parada Mussol.";
+      $('hora').textContent = e.properText ? 'Proper pas previst: ' + e.properText + '.' : '';
+      cons.textContent = 'Torneu a consultar aquesta pàgina una mica abans del pas.'; cons.classList.remove('ocult');
+    } else {
+      $('titol').textContent = 'Ara no hi ha servei a la parada Mussol';
+      $('motiu').textContent = 'Fora de l’horari de pas.';
+      $('hora').textContent = e.properText ? 'Primer pas: ' + e.properText + '.' : '';
+    }
+    if (e.horaris) { xips('hFeiners', e.horaris.feiners); xips('hDissabtes', e.horaris.dissabtes); xips('hFestius', e.horaris.festius); }
+    $('actualitzat').textContent = 'Actualitzat a les ' + hm(Date.now());
+  }
+
+  function error(){
+    $('estat').className = 'estat carregant';
+    $('icona').innerHTML = ICONA_ESPERA;
+    $('titol').textContent = "No s'ha pogut consultar l'estat";
+    $('motiu').textContent = 'Comproveu la connexió i torneu-ho a provar.';
+    $('hora').textContent = '';
+    $('detall').classList.add('ocult'); $('consell').classList.add('ocult');
+  }
+
+  async function consulta(){
+    try {
+      const r = await fetch(SERVIDOR + '?accio=estat&t=' + Date.now(), {cache:'no-store'});
+      const e = await r.json();
+      if (!e.ok) throw new Error();
+      pinta(e);
+    } catch (_) { error(); }
+  }
+
+  $('icona').innerHTML = ICONA_ESPERA;
+  $('refresca').addEventListener('click', consulta);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) consulta(); });
+  consulta();
+  setInterval(consulta, 60000);
+</script>
+</body>
+</html>
